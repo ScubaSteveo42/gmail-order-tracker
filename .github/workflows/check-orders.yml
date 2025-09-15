@@ -1,0 +1,33 @@
+name: Check Orders (IMAP)
+
+on:
+  schedule:
+    - cron: "0 */12 * * *"   # every 12 hours
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run checker
+        env:
+          IMAP_EMAIL: ${{ secrets.IMAP_EMAIL }}
+          IMAP_APP_PASSWORD: ${{ secrets.IMAP_APP_PASSWORD }}
+          SHEET_CSV_URL: ${{ secrets.SHEET_CSV_URL }}
+          MAILBOX: INBOX
+        run: |
+          python3 check_orders.py
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/status.csv
+          git commit -m "Update status.csv [skip ci]" || echo "No changes"
+          git push
+
